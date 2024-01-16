@@ -234,46 +234,49 @@ def main():
       raw_text = st.text_area("Enter Your Tweets")
       submit_text = st.form_submit_button(label='ENTER')
 
-    if submit_text and raw_text.strip():  # Check if the input field is not empty
+    if submit_text and raw_text.strip():  # Check if the entered text is not empty
         col1, col2 = st.columns(2)
         normalized_text = normalized_sentence(raw_text)
         preprocessed_text = loaded_tokenizer.texts_to_sequences([normalized_text])
         preprocessed_text = pad_sequences(preprocessed_text, maxlen=MAXLEN, padding='post')
 
-        prediction = label_encoder.inverse_transform(np.argmax(model.predict([preprocessed_text]), axis=-1))[0]
+        if preprocessed_text.any():  # Check if the preprocessed text is not empty
+            prediction = label_encoder.inverse_transform(np.argmax(model.predict([preprocessed_text]), axis=-1))[0]
 
-        class_probabilities = zip(label_encoder.classes_, model.predict([preprocessed_text])[0])
+            class_probabilities = zip(label_encoder.classes_, model.predict([preprocessed_text])[0])
 
-        with col1:
-            st.success("Your Entered Tweets")
-            st.write(raw_text)
-            st.success("Preprocessed Tweets")
-            st.write(f"{normalized_text}")
+            with col1:
+                st.success("Your Entered Tweets")
+                st.write(raw_text)
+                st.success("Preprocessed Tweets")
+                st.write(f"{normalized_text}")
 
-        with col2:
-            st.success("Predicted Emotion")
-            emoji_icon = emoji[prediction]
-            st.write("{}:{}".format(prediction, emoji_icon))
+            with col2:
+                st.success("Predicted Emotion")
+                emoji_icon = emoji[prediction]
+                st.write("{}:{}".format(prediction, emoji_icon))
 
-            st.success("Distribution of Emotion Prediction Probability")
-            labels, probabilities = zip(*class_probabilities)
+                st.success("Distribution of Emotion Prediction Probability")
+                labels, probabilities = zip(*class_probabilities)
 
-            colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+                colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
-            fig, ax = plt.subplots()
-            bars = ax.barh(labels, probabilities, color=colors)
+                fig, ax = plt.subplots()
+                bars = ax.barh(labels, probabilities, color=colors)
 
-            for bar, probability in zip(bars, probabilities):
-                ax.text(bar.get_width() + 0.02, bar.get_y() + bar.get_height() / 2, f'{probability:.3f}', ha='center', va='center')
+                for bar, probability in zip(bars, probabilities):
+                    ax.text(bar.get_width() + 0.02, bar.get_y() + bar.get_height() / 2, f'{probability:.3f}', ha='center', va='center')
 
-            ax.set_xlabel('Probability')
-            ax.set_title('Emotion Prediction Probability Distribution')
-            st.pyplot(fig)
+                ax.set_xlabel('Probability')
+                ax.set_title('Emotion Prediction Probability Distribution')
+                st.pyplot(fig)
 
-        st.success("LIME Explanation")
-        exp = explainer.explain_instance(raw_text, predict_proba, num_features=6, labels=[0, 1, 2, 3, 4, 5])
-        lime_html = exp.as_html()
-        st.components.v1.html(lime_html, height=800, width=1000)
+            st.success("LIME Explanation")
+            exp = explainer.explain_instance(raw_text, predict_proba, num_features=6, labels=[0, 1, 2, 3, 4, 5])
+            lime_html = exp.as_html()
+            st.components.v1.html(lime_html, height=800, width=1000)
+        else:
+            st.warning("Please enter valid text to predict emotions.")
     elif submit_text:
         st.warning("Please enter text in the input field to predict emotions.")
         
